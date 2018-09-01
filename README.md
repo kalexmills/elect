@@ -30,4 +30,4 @@ The above command launches three subprocesses, each listening on ports 1234 2345
 elect launch node 1234 localhost:2345 localhost:3456
 ```
 
-The above command launches a single subprocess listening on port 1234, and looking for peers running at localhost:2345 and localhost:3456, respectively. You can use this version of the command to run and configure a local Kubernetes cluster for testing.
+The above command launches a single subprocess listening on port 1234, and looking for peers running at localhost:2345 and localhost:3456, respectively. You can use this version of the command for deployments.
