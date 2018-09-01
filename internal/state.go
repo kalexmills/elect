@@ -92,7 +92,6 @@ func (state *State) resetElectionTimer() {
 	//state.log("Setting election timeout to ", delay)
 	if state.electionTimer == nil || state.electionTimer.Stop() {
 		state.electionTimer = time.AfterFunc(delay, func() {
-			state.log("Election timed out!")
 			state.electionTimeout <- struct{}{}
 		})
 	}

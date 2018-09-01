@@ -2,7 +2,6 @@ package elect
 
 import (
 	"net/rpc"
-	"strconv"
 )
 
 // Candidate runs the protocol for a candidate node. Returns the next node type it would like to transition to.
@@ -54,7 +53,7 @@ func (state *State) Candidate(sb Switchboard) (newState int) {
 
 			if resp.VoteGranted {
 				nVotes++
-				state.log("Received YES vote in Term", resp.Term, "from", strconv.FormatUint(resp.SenderId, 36))
+				state.log("Received YES vote in Term", resp.Term, "from", resp.SenderId)
 				if nVotes > len(sb.Outs)/2+1 {
 					return Leader
 				}

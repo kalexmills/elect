@@ -28,6 +28,7 @@ func (state *State) Raft(port uint64, peers []string) {
 	// Setup memory
 	state.votedFor = Noone
 
+	// Seed RNG because timeouts need to be "random enough".
 	seed, _ := crypto.Int(crypto.Reader, big.NewInt(int64(^uint64(0)>>1)))
 	rand.Seed(seed.Int64())
 

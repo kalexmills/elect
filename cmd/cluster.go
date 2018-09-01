@@ -88,7 +88,7 @@ Usage:
 					terminated := make(chan struct{})
 					go func() {
 						cmd.Wait()
-						fmt.Println("Process ", cmd.Process.Pid, " killed")
+						fmt.Println("***** Process", cmd.Process.Pid, "killed *****")
 						terminated <- struct{}{}
 					}()
 

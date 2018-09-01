@@ -1,7 +1,5 @@
 package elect
 
-import "strconv"
-
 // RequestVoteQ is the request for RequestVote messages.
 type RequestVoteQ struct {
 	Term         uint64
@@ -35,9 +33,9 @@ func (node *Node) RequestVote(in RequestVoteQ, out *RequestVoteA) error {
 	}
 
 	if out.VoteGranted {
-		state.log("RequestVote in term ", in.Term, " received from candidate ", strconv.FormatUint(in.CandidateId, 36), "...Responded YES")
+		state.log("RequestVote in term ", in.Term, " received from candidate ", in.CandidateId, "...Responded YES")
 	} else {
-		state.log("RequestVote in term ", in.Term, " received from candidate ", strconv.FormatUint(in.CandidateId, 36), "...Responded NO; Voted for ", strconv.FormatUint(state.votedFor, 36))
+		state.log("RequestVote in term ", in.Term, " received from candidate ", in.CandidateId, "...Responded NO; Voted for ", state.votedFor)
 	}
 	return nil
 }
