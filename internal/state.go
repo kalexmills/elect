@@ -1,3 +1,22 @@
+// Copyright © 2018 K. Alex Mills <k.alex.mills@gmail.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 package elect
 
 import (
@@ -14,7 +33,7 @@ const (
 	Candidate
 )
 
-// State stores the state of a single node in the Raft protocol.
+// State stores the state of a single node in the raft protocol.
 type State struct {
 	PersistentState
 	VolatileState
@@ -28,6 +47,7 @@ type PersistentState struct {
 	log         []uint
 }
 
+// VolatileState stores the state which is not saved to disk.
 type VolatileState struct {
 	commitIndex uint64
 	lastApplied uint64
@@ -47,6 +67,7 @@ type VolatileState struct {
 	becomeFollower chan struct{}
 }
 
+// LeaderState stores state which is only allocated when a node becomes a leader.
 type LeaderState struct {
 	nextIndex  []uint
 	matchIndex []uint
@@ -63,7 +84,7 @@ func Launch(port uint64, peers []string) {
 	node.localstate = new(State)
 	rpc.Register(node)
 
-	node.localstate.Raft(port, peers)
+	node.localstate.raft(port, peers)
 }
 
 func (s *PersistentState) incrementTerm() {
