@@ -25,10 +25,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"os"
-	"strconv"
-	"sync"
 	"os/exec"
 	"os/signal"
+	"strconv"
+	"sync"
 )
 
 // localCmd represents the local command
@@ -52,7 +52,7 @@ Usage:
 			}
 		}
 
-		// Runs each node in a separate goroutine.
+		// Runs each node in a separate process.
 		var wg sync.WaitGroup
 		wg.Add(len(ports))
 
@@ -60,30 +60,31 @@ Usage:
 		running := make(chan *exec.Cmd, len(ports))
 		for i := 0; i < len(ports); i++ {
 
+			// Construct args for the subprocess call.
 			k := 0
-			peers := make([]string, len(ports) - 1)
+			peers := make([]string, len(ports)-1)
 			for j := 0; j < len(ports); j++ {
 				if ports[i] != ports[j] {
 					peers[k] = fmt.Sprintf("localhost:%d", ports[j])
 					k++
 				}
- 			}
+			}
 
- 			// Starts a cluster node as a local process, and restarts it when it crashes.
+			// Starts a cluster node as a local process, and restarts it when it crashes.
 			go func(port uint64, peers []string) {
-
 				for {
-					cmd := exec.Command(".\\elect", append([]string{"launch","node", strconv.FormatUint(port, 10)}, peers...)...)
+					cmd := exec.Command("elect", append([]string{"launch", "node", strconv.FormatUint(port, 10)}, peers...)...)
 					cmd.Stdout = os.Stdout
 					cmd.Stderr = os.Stderr
 
 					running <- cmd
-					err := cmd.Run()
+					err := cmd.Start()
 					if err != nil {
 						fmt.Println("Could not start subprocess:", err)
+						continue
 					}
 
-					// Keep the process if it crashes, but if this process is killed, stop rebooting them.
+					// Keep the process if it crashes, but if this process is killed, stop rebooting.
 					terminated := make(chan struct{})
 					go func() {
 						cmd.Wait()
@@ -91,13 +92,12 @@ Usage:
 					}()
 
 					select {
-						case <-terminated:
-							continue
-						case <- stopRestarting:
-							break
+					case <-terminated:
+						continue
+					case <-stopRestarting:
+						break
 					}
 				}
-
 				wg.Done()
 			}(ports[i], peers)
 		}
@@ -108,13 +108,15 @@ Usage:
 		signal.Notify(interrupt, os.Interrupt, os.Kill)
 		go func() {
 			<-interrupt
+			defer func() {
+				os.Exit(1)
+			}()
 			stopRestarting <- struct{}{}
 			for cmd := range running {
 				if err := cmd.Process.Kill(); err != nil {
 					fmt.Println("Failed to kill subprocess ", cmd.Process.Pid, " error ", err)
 				}
 			}
-			os.Exit(1)
 		}()
 		fmt.Println("Cluster created.")
 		wg.Wait() // This waitgroup never halts unless someone killed all our nodes {o.o}

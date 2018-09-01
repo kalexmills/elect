@@ -23,10 +23,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-	"strconv"
-	"os"
 	"github.com/kalexmills/elect/internal"
+	"github.com/spf13/cobra"
+	"os"
+	"strconv"
 )
 
 // nodeCmd represents the node command
@@ -47,7 +47,6 @@ Ex:
 			fmt.Println("First argument must be parseable as an integer.")
 			os.Exit(1)
 		}
-
 
 		elect.Launch(port, args[1:])
 	},

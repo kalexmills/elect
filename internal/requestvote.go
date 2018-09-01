@@ -20,7 +20,7 @@ type RequestVoteA struct {
 // RequestVote is the RPC handler that handles RequestVote calls
 func (node *Node) RequestVote(in RequestVoteQ, out *RequestVoteA) error {
 	state := node.localstate
-	state.OnReceiveRPC(in.Term)
+	state.onReceiveRpc(in.Term)
 
 	out.SenderId = state.id
 	if in.Term < state.currentTerm {
@@ -35,10 +35,9 @@ func (node *Node) RequestVote(in RequestVoteQ, out *RequestVoteA) error {
 	}
 
 	if out.VoteGranted {
-		state.logger.Print("RequestVote in term ", in.Term ," received from candidate ", strconv.FormatUint(in.CandidateId, 36), "...Responded YES")
+		state.log("RequestVote in term ", in.Term, " received from candidate ", strconv.FormatUint(in.CandidateId, 36), "...Responded YES")
 	} else {
-		state.logger.Print("RequestVote in term ", in.Term ," received from candidate ", strconv.FormatUint(in.CandidateId, 36), "...Responded NO; Voted for ", strconv.FormatUint(state.votedFor, 36))
+		state.log("RequestVote in term ", in.Term, " received from candidate ", strconv.FormatUint(in.CandidateId, 36), "...Responded NO; Voted for ", strconv.FormatUint(state.votedFor, 36))
 	}
 	return nil
 }
-

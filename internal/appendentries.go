@@ -19,13 +19,20 @@ type AppendEntriesA struct {
 // AppendEntries is the RPC Handler that handles AppendEntries calls
 func (node *Node) AppendEntries(in AppendEntriesQ, out *AppendEntriesA) error {
 	state := node.localstate
-	state.OnReceiveRPC(in.Term)
 
-	state.ResetTimer()
-	state.SignalCandidateLost()
-	state.logger.Println("AppendEntries message received during Term ", in.Term)
+	state.onReceiveRpc(in.Term)
+
+	state.signalCandidateLost()
+
+	// Quit early on a heartbeat.
+	if len(in.Entries) == 0 {
+		return nil
+	}
+
+	state.log("AppendEntries message received during Term ", in.Term)
+
+	out.Term = state.currentTerm
 
 	// For leader-election, all that is needed is that this serves as a heart-beat.
 	return nil
 }
-
