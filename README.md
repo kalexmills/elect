@@ -2,7 +2,7 @@
 Simple, [by-the-book](https://raft.github.io/raft.pdf) implementation of Raft consensus
 
 ** WORK-IN-PROGRESS **
-Right now, leader election *seems* to be working as expected under normal circumstances.
+Right now, leader election *seems* to be working as expected under some crash scenarios, but has not yet been thoroughly tested.
 
 The ultimate goal is to produce an implementation that works, has been tested, and is understandable.
 
