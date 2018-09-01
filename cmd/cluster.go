@@ -27,7 +27,8 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"github.com/kalexmills/elect/internal"
+	"os/exec"
+	"os/signal"
 )
 
 // localCmd represents the local command
@@ -54,6 +55,8 @@ Usage:
 		// Runs each node in a separate goroutine.
 		var wg sync.WaitGroup
 		wg.Add(len(ports))
+
+		running := make(chan *exec.Cmd, len(ports))
 		for i := 0; i < len(ports); i++ {
 
 			k := 0
@@ -65,13 +68,34 @@ Usage:
 				}
  			}
 
-			go func(port uint64) {
-				node := new(elect.State)
-				node.Launch(port, peers)
+			go func(port uint64, peers []string) {
+				cmd := exec.Command(".\\elect", append([]string{"launch","node", strconv.FormatUint(port, 10)}, peers...)...)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+
+				running <- cmd
+				err := cmd.Run()
 				wg.Done()
-			}(ports[i])
+				if err != nil {
+					fmt.Println("Could not start subprocess:", err)
+				}
+			}(ports[i], peers)
 		}
-		wg.Wait() // This waitgroup never halts unless someone killed all our nodes. o.o
+
+		// On interrupt, kill all subprocesses before exit.
+		c := make(chan os.Signal, 2)
+		signal.Notify(c, os.Interrupt, os.Kill)
+		go func() {
+			<-c
+			for cmd := range running {
+				if err := cmd.Process.Kill(); err != nil {
+					fmt.Println("Failed to kill subprocess ", cmd.Process.Pid, " error ", err)
+				}
+			}
+			os.Exit(1)
+		}()
+		fmt.Println("Cluster created.")
+		wg.Wait() // This waitgroup never halts unless someone killed all our nodes {o.o}
 	},
 }
 

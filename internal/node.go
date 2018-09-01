@@ -3,6 +3,7 @@ package elect
 import (
 	"time"
 	"net/rpc"
+	"log"
 )
 
 const (
@@ -37,9 +38,12 @@ type VolatileState struct {
 	id uint64
 	state int
 	timer *time.Timer
+
+	logger *log.Logger
+
 	// candateLost is closed if the candidate loses
 	candidateLost chan struct{}
-	// becomeFollower is closed when a term higher than the current term is found
+	// becomeFollower is closed when a Term higher than the current Term is found
 	becomeFollower chan struct{}
 }
 
@@ -68,7 +72,7 @@ func (s *PersistentState) incrementTerm() {
 	s.votedFor = Noone
 }
 
-// tryVote attempts to vote for the node with id. The result is the node which has been voted for in this term.
+// tryVote attempts to vote for the node with id. The result is the node which has been voted for in this Term.
 func (s *PersistentState) tryVote(id uint64) uint64 {
 	if s.votedFor == Noone {
 		s.votedFor = id
