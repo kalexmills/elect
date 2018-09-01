@@ -21,11 +21,11 @@ package elect
 
 import (
 	crypto "crypto/rand"
+	"fmt"
+	"log"
 	"math/big"
 	"math/rand"
-	"log"
 	"os"
-	"fmt"
 	"time"
 )
 
@@ -37,7 +37,7 @@ const (
 )
 
 // raft sets up the initial volatile state and
-func (state *State) raft(port uint64, peers []string) {
+func (state *state) raft(port uint64, peers []string) {
 	defer func() {
 		if err := recover(); err != nil {
 			state.logger.Printf("%d panicking! err: %v", state.id, err)
@@ -81,8 +81,8 @@ func (state *State) raft(port uint64, peers []string) {
 			state.state = state.candidate(sb)
 			continue
 		case Leader:
-			state.log("Transitioning to Leader")
-			state.state = state.Leader(sb)
+			state.log("Transitioning to leader")
+			state.state = state.leader(sb)
 		}
 	}
 }

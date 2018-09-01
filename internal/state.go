@@ -20,11 +20,11 @@
 package elect
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"net/rpc"
 	"time"
-	"fmt"
 )
 
 const (
@@ -33,27 +33,27 @@ const (
 	Candidate
 )
 
-// State stores the state of a single node in the raft protocol.
-type State struct {
-	PersistentState
-	VolatileState
-	LeaderState
+// state stores the state of a single node in the raft protocol.
+type state struct {
+	persistentState
+	volatileState
+	leaderState
 }
 
 // TODO: Encapsulate persistence
-type PersistentState struct {
+type persistentState struct {
 	currentTerm uint64
 	votedFor    uint64
 	log         []uint
 }
 
-// VolatileState stores the state which is not saved to disk.
-type VolatileState struct {
+// volatileState stores the state which is not saved to disk.
+type volatileState struct {
 	commitIndex uint64
 	lastApplied uint64
 
-	id            uint64
-	state         int
+	id    uint64
+	state int
 
 	logger *log.Logger
 
@@ -67,8 +67,8 @@ type VolatileState struct {
 	becomeFollower chan struct{}
 }
 
-// LeaderState stores state which is only allocated when a node becomes a leader.
-type LeaderState struct {
+// leaderState stores state which is only allocated when a node becomes a leader.
+type leaderState struct {
 	nextIndex  []uint
 	matchIndex []uint
 
@@ -81,19 +81,19 @@ type LeaderState struct {
 func Launch(port uint64, peers []string) {
 	// Register a new RPC handler
 	node := new(Node)
-	node.localstate = new(State)
+	node.localstate = new(state)
 	rpc.Register(node)
 
 	node.localstate.raft(port, peers)
 }
 
-func (s *PersistentState) incrementTerm() {
+func (s *persistentState) incrementTerm() {
 	s.currentTerm++
 	s.votedFor = Noone
 }
 
 // tryVote attempts to vote for the node with id. The result is the node which has been voted for in this Term.
-func (s *PersistentState) tryVote(id uint64) uint64 {
+func (s *persistentState) tryVote(id uint64) uint64 {
 	if s.votedFor == Noone {
 		s.votedFor = id
 	}
@@ -101,13 +101,13 @@ func (s *PersistentState) tryVote(id uint64) uint64 {
 }
 
 // onReceiveRpc encapsulates the common activities each node must perform when they receive an RPC
-func (state *State) onReceiveRpc(term uint64) {
+func (state *state) onReceiveRpc(term uint64) {
 	state.resetElectionTimer()
 	state.maybeSignalTermExceeded(term)
 }
 
 // resetElectionTimer sets the election timer to a random timeout between MinElectionTimeout and MaxElectionTimeout
-func (state *State) resetElectionTimer() {
+func (state *state) resetElectionTimer() {
 	delay := time.Millisecond * time.Duration(rand.Intn(MaxElectionTimeout-MinElectionTimeout)+MinElectionTimeout)
 
 	//state.log("Setting election timeout to ", delay)
@@ -120,7 +120,7 @@ func (state *State) resetElectionTimer() {
 
 // maybeSignalTermExceeded checks to see if the Term has been exceeded and, if so, signals that this node should become
 // a follower.
-func (state *State) maybeSignalTermExceeded(newTerm uint64) {
+func (state *state) maybeSignalTermExceeded(newTerm uint64) {
 	if state.currentTerm < newTerm {
 		state.currentTerm = newTerm
 		if state.state != Follower {
@@ -130,20 +130,23 @@ func (state *State) maybeSignalTermExceeded(newTerm uint64) {
 }
 
 // signalCandidateLost signals that the candidate has lost
-func (state *State) signalCandidateLost() {
+func (state *state) signalCandidateLost() {
 	if state.state == Candidate {
 		state.candidateLost <- struct{}{}
 	}
 }
 
-func (state *State) log(msg ...interface{}) {
+func (state *state) log(msg ...interface{}) {
 	var s string
 	switch state.state {
-	case Leader: s =    "LEADER"
+	case Leader:
+		s = "LEADER"
 		break
-	case Follower: s =  "FOLLOW"
+	case Follower:
+		s = "FOLLOW"
 		break
-	case Candidate: s = "CANDID"
+	case Candidate:
+		s = "CANDID"
 		break
 	}
 	state.logger.Printf("%s %4d %s", s, state.currentTerm, fmt.Sprintln(msg...))

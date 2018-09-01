@@ -24,7 +24,7 @@ import (
 )
 
 // Follower runs the protocol for a leader node. It returns the next node type it would like to transition to.
-func (state *State) Leader(sb Switchboard) (newState int) {
+func (state *state) leader(sb Switchboard) (newState int) {
 	// Initialize leader state
 	outstanding := make(chan *rpc.Call, len(sb.Outs))
 
@@ -48,7 +48,7 @@ func (state *State) Leader(sb Switchboard) (newState int) {
 	}
 }
 
-func (state *State) sendHeartbeats(sb Switchboard, outstanding chan *rpc.Call) {
+func (state *state) sendHeartbeats(sb Switchboard, outstanding chan *rpc.Call) {
 	request := AppendEntriesQ{}
 	request.Term = state.currentTerm
 	request.Entries = make([]int, 0)

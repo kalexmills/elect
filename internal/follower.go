@@ -20,7 +20,7 @@
 package elect
 
 // Follower runs the protocol for a follower node. Returns the next node type it would like to transition to.
-func (state *State) Follower() (newState int) {
+func (state *state) Follower() (newState int) {
 	state.resetElectionTimer()
 	state.votedFor = Noone
 

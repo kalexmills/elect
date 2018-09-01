@@ -24,7 +24,7 @@ import (
 )
 
 // candidate runs the protocol for a candidate node. Returns the next node type it would like to transition to.
-func (state *State) candidate(sb Switchboard) (newState int) {
+func (state *state) candidate(sb Switchboard) (newState int) {
 	state.incrementTerm()
 
 	// Candidates vote for themselves (in case anyone asks)
