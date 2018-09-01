@@ -1,5 +1,5 @@
 # elect
-Simple, by-the-book implementation of Raft consensus
+Simple, [by-the-book](https://raft.github.io/raft.pdf) implementation of Raft consensus
 
 ** WORK-IN-PROGRESS **
 Right now, leader election *seems* to be working as expected under normal circumstances.
