@@ -35,7 +35,15 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "elect",
 	Short: "An understandable implementation of raft consensus",
-	Long: "None",
+	Long: `Elect is an implementation of raft consensus in go. 
+
+Examples:
+
+ > elect launch cluster 1234 2345 3456       
+
+        Launches a local 3 process cluster, listening on ports 1234, 2345,
+        and 3456 respectively.
+   `,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },

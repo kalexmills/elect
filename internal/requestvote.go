@@ -23,11 +23,12 @@ func (node *Node) RequestVote(in RequestVoteQ, out *RequestVoteA) error {
 	state.OnReceiveRPC(in.Term)
 
 	out.SenderId = state.id
-	out.Term = state.currentTerm
 	if in.Term < state.currentTerm {
 		out.VoteGranted = false
 	}
+	out.Term = state.currentTerm
 	state.votedFor = state.tryVote(in.CandidateId)
+
 	if state.votedFor == in.CandidateId {
 		// TODO: Check that the candidate's log is at least as up-to-date as my own.
 		out.VoteGranted = true

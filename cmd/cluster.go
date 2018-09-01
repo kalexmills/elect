@@ -56,6 +56,7 @@ Usage:
 		var wg sync.WaitGroup
 		wg.Add(len(ports))
 
+		stopRestarting := make(chan struct{})
 		running := make(chan *exec.Cmd, len(ports))
 		for i := 0; i < len(ports); i++ {
 
@@ -68,25 +69,46 @@ Usage:
 				}
  			}
 
+ 			// Starts a cluster node as a local process, and restarts it when it crashes.
 			go func(port uint64, peers []string) {
-				cmd := exec.Command(".\\elect", append([]string{"launch","node", strconv.FormatUint(port, 10)}, peers...)...)
-				cmd.Stdout = os.Stdout
-				cmd.Stderr = os.Stderr
 
-				running <- cmd
-				err := cmd.Run()
-				wg.Done()
-				if err != nil {
-					fmt.Println("Could not start subprocess:", err)
+				for {
+					cmd := exec.Command(".\\elect", append([]string{"launch","node", strconv.FormatUint(port, 10)}, peers...)...)
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+
+					running <- cmd
+					err := cmd.Run()
+					if err != nil {
+						fmt.Println("Could not start subprocess:", err)
+					}
+
+					// Keep the process if it crashes, but if this process is killed, stop rebooting them.
+					terminated := make(chan struct{})
+					go func() {
+						cmd.Wait()
+						terminated <- struct{}{}
+					}()
+
+					select {
+						case <-terminated:
+							continue
+						case <- stopRestarting:
+							break
+					}
 				}
+
+				wg.Done()
 			}(ports[i], peers)
 		}
 
 		// On interrupt, kill all subprocesses before exit.
-		c := make(chan os.Signal, 2)
-		signal.Notify(c, os.Interrupt, os.Kill)
+
+		interrupt := make(chan os.Signal, 2)
+		signal.Notify(interrupt, os.Interrupt, os.Kill)
 		go func() {
-			<-c
+			<-interrupt
+			stopRestarting <- struct{}{}
 			for cmd := range running {
 				if err := cmd.Process.Kill(); err != nil {
 					fmt.Println("Failed to kill subprocess ", cmd.Process.Pid, " error ", err)

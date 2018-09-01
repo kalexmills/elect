@@ -4,6 +4,7 @@ import (
 	"time"
 	"net/rpc"
 	"log"
+	"math/rand"
 )
 
 const (
@@ -17,7 +18,7 @@ type Node struct {
 	localstate *State
 }
 
-// State serves as a namespace for RPC requests in the Raft protocol.
+// State stores the state of a single node in the Raft protocol.
 type State struct {
 	PersistentState
 	VolatileState
@@ -55,16 +56,16 @@ type LeaderState struct {
 // Launch launches this node, listening on a TCP connection on the given port and attempting to connect to
 // the given peers, which must be specified as "host:port" strings. The function blocks as long as the
 // raft node is running.
-func (state *State) Launch(port uint64, peers []string) {
+func Launch(port uint64, peers []string) {
 	// Register a new RPC handler
-	node := new(Node)        // TODO: Test for code smell regarding ownership
-	node.localstate = state
+	node := new(Node)
+	node.localstate = new(State)
 	rpc.Register(node)
 
 	var net Switchboard
 	net.Initialize(port, peers)
 
-	state.RunRaft(net)
+	node.localstate.RunRaft(net)
 }
 
 func (s *PersistentState) incrementTerm() {
@@ -78,4 +79,29 @@ func (s *PersistentState) tryVote(id uint64) uint64 {
 		s.votedFor = id
 	}
 	return s.votedFor
+}
+
+func (state *State) ResetTimer() {
+	delay := time.Duration(rand.Intn(MaxElectionTimeout - MinElectionTimeout) + MinElectionTimeout) * time.Millisecond
+	state.timer.Reset(delay)
+	state.logger.Println("Setting election timeout to ", delay)
+}
+
+// OnReceiveRPC encapsulates the common activities each node must perform when they receive an RPC
+func (state *State) OnReceiveRPC(term uint64) {
+	state.ResetTimer()
+	state.MaybeSignalTermExceeded(term)
+}
+
+// MaybeSignalTermExceeded checks to see if the Term has been exceeded and, if so, signals that this node should become
+// a follower.
+func (state *State) MaybeSignalTermExceeded(newTerm uint64) {
+	if state.currentTerm < newTerm {
+		state.currentTerm = newTerm
+		state.becomeFollower <- struct{}{}
+	}
+}
+
+func (state *State) SignalCandidateLost() {
+	state.candidateLost <- struct{}{}
 }

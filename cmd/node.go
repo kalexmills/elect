@@ -48,8 +48,8 @@ Ex:
 			os.Exit(1)
 		}
 
-		node := new(elect.State)
-		node.Launch(port, args[1:])
+
+		elect.Launch(port, args[1:])
 	},
 }
 

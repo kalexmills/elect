@@ -144,28 +144,3 @@ func (state *State) RunLeader(sb Switchboard) (newState int) {
 		}
 	}
 }
-
-func (state *State) ResetTimer() {
-	delay := time.Duration(rand.Intn(MaxElectionTimeout - MinElectionTimeout) + MinElectionTimeout) * time.Millisecond
-	state.timer.Reset(delay)
-	state.logger.Println("Setting election timeout to ", delay)
-}
-
-// OnReceiveRPC encapsulates the common activities each node must perform when they receive an RPC
-func (state *State) OnReceiveRPC(term uint64) {
-	state.ResetTimer()
-	state.MaybeSignalTermExceeded(term)
-}
-
-// MaybeSignalTermExceeded checks to see if the Term has been exceeded and, if so, signals that this node should become
-// a follower.
-func (state *State) MaybeSignalTermExceeded(newTerm uint64) {
-	if state.currentTerm < newTerm {
-		state.currentTerm = newTerm
-		state.becomeFollower <- struct{}{}
-	}
-}
-
-func (state *State) SignalCandidateLost() {
-	state.candidateLost <- struct{}{}
-}
