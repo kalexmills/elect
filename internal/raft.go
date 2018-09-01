@@ -4,7 +4,6 @@ import (
 	crypto "crypto/rand"
 	"math/big"
 	"math/rand"
-	"strconv"
 	"log"
 	"os"
 	"fmt"
@@ -21,7 +20,7 @@ const (
 func (state *State) Raft(port uint64, peers []string) {
 	defer func() {
 		if err := recover(); err != nil {
-			state.logger.Printf("panicking! err: %v", strconv.FormatUint(state.id, 36), err)
+			state.logger.Printf("%d panicking! err: %v", state.id, err)
 			panic(err)
 		}
 	}()
@@ -29,13 +28,12 @@ func (state *State) Raft(port uint64, peers []string) {
 	// Setup memory
 	state.votedFor = Noone
 
-	state.id = Noone // 0 is a special ID used to indicate that this state hasn't (yet) cast a vote
 	seed, _ := crypto.Int(crypto.Reader, big.NewInt(int64(^uint64(0)>>1)))
 	rand.Seed(seed.Int64())
-	for state.id == Noone {
-		state.id = rand.Uint64() // New state; new ID. This means a crashed candidate definitely loses its election.
-	}
-	state.logger = log.New(os.Stdout, fmt.Sprintf("%-13s ", strconv.FormatUint(state.id, 36)), log.Lmicroseconds)
+
+	state.id = uint64(os.Getpid())
+
+	state.logger = log.New(os.Stdout, fmt.Sprintf("%-5d ", state.id), log.Lmicroseconds)
 
 	n := len(peers)
 	state.electionTimeout = make(chan struct{})
