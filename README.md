@@ -4,7 +4,7 @@ Implementation of [Raft consensus](https://raft.github.io/raft.pdf)
 ** WORK-IN-PROGRESS **
 * Leader election *seems* to be working as expected under some crash scenarios, but has not yet been thoroughly tested.
 
-The ultimate goal is to produce an implementation that works, has been tested, and provides me with experience with Raft and Go.
+The ultimate goal is to produce an implementation that works, has been tested, and provides me with experience with Raft, Go, and testing distributed systems.
 
 ## Instructions
 
