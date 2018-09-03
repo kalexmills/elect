@@ -1,17 +1,12 @@
 # elect
-Simple, [by-the-book](https://raft.github.io/raft.pdf) implementation of Raft consensus
+Implementation of [Raft consensus](https://raft.github.io/raft.pdf)
+
+The ultimate goal is to produce an implementation that works, has been tested, and provides me with experience with Raft, Go, and testing distributed systems.
 
 ** WORK-IN-PROGRESS **
-Right now, leader election *seems* to be working as expected under normal circumstances.
-
-The ultimate goal is to produce an implementation that works, has been tested, and is understandable.
+* Leader election *seems* to be working as expected under some crash scenarios, but has not yet been thoroughly tested.
 
 ## Instructions
-
-#### Download the code
-```
-go get -d github.com/kalexmills/elect
-```
 
 #### Install the CLI
 ```
@@ -30,4 +25,4 @@ The above command launches three subprocesses, each listening on ports 1234 2345
 elect launch node 1234 localhost:2345 localhost:3456
 ```
 
-The above command launches a single subprocess listening on port 1234, and looking for peers running at localhost:2345 and localhost:3456, respectively. You can use this version of the command for deployments.
+The above command launches a single subprocess listening on port 1234, and looking for peers running at localhost:2345 and localhost:3456, respectively. You can use this version of the command for deployment to a test environment.
