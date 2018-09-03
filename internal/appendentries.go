@@ -47,6 +47,9 @@ func (node *Node) AppendEntries(in AppendEntriesQ, out *AppendEntriesA) error {
 		return nil
 	}
 	if state.currentTerm < in.Term {
+		if state.role != Follower {
+			state.votedFor = Noone
+		}
 		state.currentTerm = in.Term
 		if state.role != Follower {
 			state.becomeFollower <- struct{}{}

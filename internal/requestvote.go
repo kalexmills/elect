@@ -39,6 +39,9 @@ func (node *Node) RequestVote(in RequestVoteQ, out *RequestVoteA) error {
 	state := node.localstate
 	state.resetElectionTimer()
 	if state.currentTerm < in.Term {
+		if state.role != Follower {
+			state.votedFor = Noone // Reset votedFor so the response to this RPC is a vote for the candidate
+		}
 		state.currentTerm = in.Term
 		if state.role != Follower {
 			state.becomeFollower <- struct{}{}
