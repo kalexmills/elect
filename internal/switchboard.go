@@ -27,7 +27,7 @@ import (
 	"sync"
 )
 
-// Switchboard is a structure used to persist the local state of network connections among peers.
+// Switchboard is a structure used to persist the local role of network connections among peers.
 type Switchboard struct {
 	In   net.Listener
 	Outs []*rpc.Client

@@ -36,7 +36,7 @@ const (
 	Noone              = 0
 )
 
-// raft sets up the initial volatile state and
+// raft sets up the initial volatile role and
 func (state *state) raft(port uint64, peers []string) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -63,26 +63,26 @@ func (state *state) raft(port uint64, peers []string) {
 
 	state.heartbeatTicker = time.Tick(HeartbeatTimeout * time.Millisecond)
 
-	state.state = Follower
+	state.role = Follower
 
 	var sb Switchboard
 	sb.Initialize(port, peers)
 
 	for {
-		// Each state only takes on one role at a time. When one of the Run* functions
+		// Each role only takes on one role at a time. When one of the Run* functions
 		// needs to change roles, it just returns the role it is transitioning to.
-		switch state.state {
+		switch state.role {
 		case Follower:
 			state.log("Transitioning to Follower")
-			state.state = state.Follower()
+			state.role = state.Follower()
 			continue
 		case Candidate:
 			state.log("Transitioning to candidate")
-			state.state = state.candidate(sb)
+			state.role = state.candidate(sb)
 			continue
 		case Leader:
 			state.log("Transitioning to leader")
-			state.state = state.leader(sb)
+			state.role = state.leader(sb)
 		}
 	}
 }

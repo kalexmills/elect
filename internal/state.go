@@ -33,7 +33,7 @@ const (
 	Candidate
 )
 
-// state stores the state of a single node in the raft protocol.
+// role stores the role of a single node in the raft protocol.
 type state struct {
 	persistentState
 	volatileState
@@ -47,13 +47,13 @@ type persistentState struct {
 	log         []string
 }
 
-// volatileState stores the state which is not saved to disk.
+// volatileState stores the role which is not saved to disk.
 type volatileState struct {
 	commitIndex uint64
 	lastApplied uint64
 
-	id    uint64
-	state int
+	id   uint64
+	role int
 
 	logger *log.Logger
 
@@ -67,7 +67,7 @@ type volatileState struct {
 	becomeFollower chan struct{}
 }
 
-// leaderState stores state which is only allocated when a node becomes a leader.
+// leaderState stores role which is only allocated when a node becomes a leader.
 type leaderState struct {
 	nextIndex  []uint
 	matchIndex []uint
@@ -110,7 +110,7 @@ func (state *state) onReceiveRpc(term uint64) {
 func (state *volatileState) resetElectionTimer() {
 	delay := time.Millisecond * time.Duration(rand.Intn(MaxElectionTimeout-MinElectionTimeout)+MinElectionTimeout)
 
-	//state.log("Setting election timeout to ", delay)
+	//role.log("Setting election timeout to ", delay)
 	if state.electionTimer == nil || state.electionTimer.Stop() {
 		state.electionTimer = time.AfterFunc(delay, func() {
 			state.electionTimeout <- struct{}{}
@@ -123,7 +123,7 @@ func (state *volatileState) resetElectionTimer() {
 func (state *state) maybeSignalTermExceeded(newTerm uint64) {
 	if state.currentTerm < newTerm {
 		state.currentTerm = newTerm
-		if state.state != Follower {
+		if state.role != Follower {
 			state.becomeFollower <- struct{}{}
 		}
 	}
@@ -131,14 +131,14 @@ func (state *state) maybeSignalTermExceeded(newTerm uint64) {
 
 // signalCandidateLost signals that the candidate has lost
 func (state *volatileState) signalCandidateLost() {
-	if state.state == Candidate {
+	if state.role == Candidate {
 		state.candidateLost <- struct{}{}
 	}
 }
 
 func (state *state) log(msg ...interface{}) {
 	var s string
-	switch state.state {
+	switch state.role {
 	case Leader:
 		s = "LEADER"
 		break

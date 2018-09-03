@@ -25,7 +25,7 @@ import (
 
 // Follower runs the protocol for a leader node. It returns the next node type it would like to transition to.
 func (state *state) leader(sb Switchboard) (newState int) {
-	// Initialize leader state
+	// Initialize leader role
 	outstanding := make(chan *rpc.Call, len(sb.Outs))
 
 	for {
