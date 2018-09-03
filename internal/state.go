@@ -33,30 +33,43 @@ const (
 	Candidate
 )
 
-// role stores the role of a single node in the raft protocol.
+// state stores the state of a single node in the raft protocol.
 type state struct {
 	persistentState
 	volatileState
 	leaderState
 }
 
-// TODO: Encapsulate persistence
+// LogEntry stores a log entry along with the term when it was written.
+type LogEntry struct {
+	entry string
+	term uint64
+}
+
+// persistentState stores variables which must be persisted to disk before responding. A copy is also kept in memory.
+// All mutator methods block while writing to disk and do not return until the write has completed.
 type persistentState struct {
 	currentTerm uint64
 	votedFor    uint64
-	log         []string
+	entries         []LogEntry
 }
 
-// volatileState stores the role which is not saved to disk.
+// volatileState stores the portions of memory which are lost on reboot.
 type volatileState struct {
+	// commitIndex is the index of the highest log entry known to be committed.
 	commitIndex uint64
+	// lastApplied is the index of the highest log entry which has been applied to the state machine.
 	lastApplied uint64
 
+	// id is the unique ID associated with this node.
 	id   uint64
+	// role is the role this node is current taking in the Raft protocol.
 	role int
 
+	// logger stores a logger.
 	logger *log.Logger
 
+	// electionTimer keeps track of the follower's election timeout.
 	electionTimer *time.Timer
 
 	// electionTimeout occurs after not receiving a message for a period
@@ -69,7 +82,9 @@ type volatileState struct {
 
 // leaderState stores role which is only allocated when a node becomes a leader.
 type leaderState struct {
+	// nextIndex is the index of the next log entry to send to each peer.
 	nextIndex  []uint
+	// matchIndex is the index of the highest log entry known to be replaced on each peer.
 	matchIndex []uint
 
 	heartbeatTicker <-chan time.Time
@@ -117,6 +132,12 @@ func (state *volatileState) signalCandidateLost() {
 	if state.role == Candidate {
 		state.candidateLost <- struct{}{}
 	}
+}
+
+// appendLogEntry appends the given entry to the local log.
+func (state *persistentState) appendLogEntry(term uint64, entry string) {
+	// TODO: write all of this to disk
+	state.log = append(state.log, LogEntry{entry, term})
 }
 
 func (state *state) log(msg ...interface{}) {

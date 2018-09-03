@@ -38,6 +38,12 @@ type RequestVoteA struct {
 func (node *Node) RequestVote(in RequestVoteQ, out *RequestVoteA) error {
 	state := node.localstate
 	state.resetElectionTimer()
+	if in.Term < state.currentTerm {
+		out.VoteGranted = false
+		out.Term = state.currentTerm
+		out.SenderId = state.id
+		return nil
+	}
 	if state.currentTerm < in.Term {
 		if state.role != Follower {
 			state.votedFor = Noone // Reset votedFor so the response to this RPC is a vote for the candidate
@@ -49,9 +55,6 @@ func (node *Node) RequestVote(in RequestVoteQ, out *RequestVoteA) error {
 	}
 
 	out.SenderId = state.id
-	if in.Term < state.currentTerm {
-		out.VoteGranted = false
-	}
 	out.Term = state.currentTerm
 	state.votedFor = state.tryVote(in.CandidateId)
 

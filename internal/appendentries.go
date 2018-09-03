@@ -25,7 +25,7 @@ type AppendEntriesQ struct {
 	LeaderId     uint64
 	PrevLogIndex uint64
 	PrevLogTerm  uint64
-	Entries      []int
+	Entries      []LogEntry
 	LeaderCommit uint64
 }
 
@@ -33,7 +33,7 @@ type AppendEntriesQ struct {
 type AppendEntriesA struct {
 	// Term is the receiver's currentTerm
 	Term    uint64
-	lastLogIndex uint64
+	// Success is true iff the RPC resulted in all entries being successfully appended to remote log
 	Success bool
 }
 
@@ -44,9 +44,7 @@ func (node *Node) AppendEntries(in AppendEntriesQ, out *AppendEntriesA) error {
 
 	if in.Term < state.currentTerm {
 		// Reject all AppendEntries messages whose terms come before our own.
-		out.Success = false
-		out.Term = state.currentTerm
-		return nil
+		return sendFailure(state.currentTerm, out)
 	}
 	if state.currentTerm < in.Term {
 		// Update our term and revert to follower status.
@@ -59,16 +57,54 @@ func (node *Node) AppendEntries(in AppendEntriesQ, out *AppendEntriesA) error {
 			state.becomeFollower <- struct{}{}
 		}
 	}
+	if state.entries[in.PrevLogIndex].term != in.PrevLogTerm {
+		// Reject messages whose previous index and term do not match our own.
+		return sendFailure(state.currentTerm, out)
+	}
 
 	// Quit early on a heartbeat.
 	if len(in.Entries) == 0 {
-		return nil
+		return sendSuccess(state.currentTerm, out)
+	}
+
+	// Check for conflicts with previous entries and toss out conflicting entries if needed.
+	start := in.PrevLogIndex
+	i := uint64(0)
+	for j := range in.Entries {
+		if state.entries[start + i].term != in.Entries[j].term {
+			state.entries = state.entries[:i]
+		}
+		i++
+	}
+
+	// Append new entries not already in log.
+	state.entries = append(state.entries, in.Entries[i:]...)
+
+	// Update commit index as needed.
+	if in.LeaderCommit > state.commitIndex {
+		state.commitIndex = min(in.LeaderCommit, uint64(len(state.entries)))
 	}
 
 	state.log("AppendEntries message received during Term ", in.Term)
 
-	out.Term = state.currentTerm
+	return sendSuccess(state.currentTerm, out)
+}
 
-	// For leader-election, all that is needed is that this serves as a heart-beat.
+func min(a uint64, b uint64) uint64 {
+	if a > b {
+		return b
+	}
+	return a
+}
+
+func sendFailure(term uint64, out *AppendEntriesA) error {
+	out.Success = false
+	out.Term = term
+	return nil
+}
+
+func sendSuccess(term uint64, out *AppendEntriesA) error {
+	out.Success = true
+	out.Term = term
 	return nil
 }
