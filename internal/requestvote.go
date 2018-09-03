@@ -37,7 +37,13 @@ type RequestVoteA struct {
 // RequestVote is the RPC handler that handles RequestVote calls
 func (node *Node) RequestVote(in RequestVoteQ, out *RequestVoteA) error {
 	state := node.localstate
-	state.onReceiveRpc(in.Term)
+	state.resetElectionTimer()
+	if state.currentTerm < in.Term {
+		state.currentTerm = in.Term
+		if state.role != Follower {
+			state.becomeFollower <- struct{}{}
+		}
+	}
 
 	out.SenderId = state.id
 	if in.Term < state.currentTerm {

@@ -38,8 +38,20 @@ type AppendEntriesA struct {
 // AppendEntries is the RPC Handler that handles AppendEntries calls
 func (node *Node) AppendEntries(in AppendEntriesQ, out *AppendEntriesA) error {
 	state := node.localstate
+	state.resetElectionTimer()
 
-	state.onReceiveRpc(in.Term)
+	if state.role == Candidate && in.Term < state.currentTerm {
+		// Candidates reject all AppendEntries messages whose terms come before their own.
+		out.Success = false
+		out.Term = state.currentTerm
+		return nil
+	}
+	if state.currentTerm < in.Term {
+		state.currentTerm = in.Term
+		if state.role != Follower {
+			state.becomeFollower <- struct{}{}
+		}
+	}
 
 	state.signalCandidateLost()
 

@@ -100,12 +100,6 @@ func (s *persistentState) tryVote(id uint64) uint64 {
 	return s.votedFor
 }
 
-// onReceiveRpc encapsulates the common activities each node must perform when they receive an RPC
-func (state *state) onReceiveRpc(term uint64) {
-	state.resetElectionTimer()
-	state.maybeSignalTermExceeded(term)
-}
-
 // resetElectionTimer sets the election timer to a random timeout between MinElectionTimeout and MaxElectionTimeout
 func (state *volatileState) resetElectionTimer() {
 	delay := time.Millisecond * time.Duration(rand.Intn(MaxElectionTimeout-MinElectionTimeout)+MinElectionTimeout)
@@ -115,17 +109,6 @@ func (state *volatileState) resetElectionTimer() {
 		state.electionTimer = time.AfterFunc(delay, func() {
 			state.electionTimeout <- struct{}{}
 		})
-	}
-}
-
-// maybeSignalTermExceeded checks to see if the Term has been exceeded and, if so, signals that this node should become
-// a follower.
-func (state *state) maybeSignalTermExceeded(newTerm uint64) {
-	if state.currentTerm < newTerm {
-		state.currentTerm = newTerm
-		if state.role != Follower {
-			state.becomeFollower <- struct{}{}
-		}
 	}
 }
 
