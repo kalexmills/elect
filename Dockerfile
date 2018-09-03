@@ -1,8 +1,5 @@
-# STEP 1 build executable binary
 FROM golang:alpine as builder
 
-# STEP 2 build a small image
-# start from scratch
 FROM scratch
 
 COPY --from=builder /etc/passwd /etc/passwd
