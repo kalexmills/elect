@@ -31,7 +31,9 @@ type AppendEntriesQ struct {
 
 // AppendEntriesA is the response to AppendEntries messages.
 type AppendEntriesA struct {
+	// Term is the receiver's currentTerm
 	Term    uint64
+	lastLogIndex uint64
 	Success bool
 }
 
@@ -40,23 +42,23 @@ func (node *Node) AppendEntries(in AppendEntriesQ, out *AppendEntriesA) error {
 	state := node.localstate
 	state.resetElectionTimer()
 
-	if state.role == Candidate && in.Term < state.currentTerm {
-		// Candidates reject all AppendEntries messages whose terms come before their own.
+	if in.Term < state.currentTerm {
+		// Reject all AppendEntries messages whose terms come before our own.
 		out.Success = false
 		out.Term = state.currentTerm
 		return nil
 	}
 	if state.currentTerm < in.Term {
-		if state.role != Follower {
-			state.votedFor = Noone
+		// Update our term and revert to follower status.
+		if state.role == Candidate {
+			state.signalCandidateLost()
 		}
+		state.votedFor = Noone
 		state.currentTerm = in.Term
 		if state.role != Follower {
 			state.becomeFollower <- struct{}{}
 		}
 	}
-
-	state.signalCandidateLost()
 
 	// Quit early on a heartbeat.
 	if len(in.Entries) == 0 {
