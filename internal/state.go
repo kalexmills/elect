@@ -44,7 +44,7 @@ type state struct {
 type persistentState struct {
 	currentTerm uint64
 	votedFor    uint64
-	log         []uint
+	log         []string
 }
 
 // volatileState stores the state which is not saved to disk.
@@ -107,7 +107,7 @@ func (state *state) onReceiveRpc(term uint64) {
 }
 
 // resetElectionTimer sets the election timer to a random timeout between MinElectionTimeout and MaxElectionTimeout
-func (state *state) resetElectionTimer() {
+func (state *volatileState) resetElectionTimer() {
 	delay := time.Millisecond * time.Duration(rand.Intn(MaxElectionTimeout-MinElectionTimeout)+MinElectionTimeout)
 
 	//state.log("Setting election timeout to ", delay)
@@ -130,7 +130,7 @@ func (state *state) maybeSignalTermExceeded(newTerm uint64) {
 }
 
 // signalCandidateLost signals that the candidate has lost
-func (state *state) signalCandidateLost() {
+func (state *volatileState) signalCandidateLost() {
 	if state.state == Candidate {
 		state.candidateLost <- struct{}{}
 	}
